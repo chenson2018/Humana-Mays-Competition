@@ -226,6 +226,10 @@ class DataPrep:
         mask = self.rx_paid['generic_name'].map(lambda x: x in opioid_all_time.index.values)
         true_opioid = self.rx_paid[mask]
         
+        true_opioid['PAY_DAY_SUPPLY_CNT'].fillna(true_opioid['PAY_DAY_SUPPLY_CNT'].mode(), inplace=True)
+        true_opioid['PAYABLE_QTY'].fillna(true_opioid['PAYABLE_QTY'].mean(), inplace=True)
+        true_opioid['MME'].fillna(true_opioid['MME'].mode(), inplace=True)
+        
         opioid_grouped = true_opioid.groupby(by=['id'])
 
         idtestlist = true_opioid['id'].drop_duplicates()
@@ -241,10 +245,14 @@ class DataPrep:
                 MME0 = on_day0['MME'].values[0]
                 SC0 = on_day0['PAY_DAY_SUPPLY_CNT'].values[0]
                 PQ0 = on_day0['PAYABLE_QTY'].values[0]
+                RX0 = on_day0['rx_cost'].values[0]
+                NP0 = on_day0['net_paid_amount'].values[0]
             else:
                 MME0 = 0
                 SC0 = 0
                 PQ0 = 0
+                RX0 = 0
+                NP0 = 0
 
             # max MME (per day) prior to day 0
             # average MME (per day) prior to day 0
@@ -267,7 +275,9 @@ class DataPrep:
                                  'max_MME_prior': maxMME,
                                  'avg_MME_prior': avgMME,
                                  'total_SUPPLY_CNT_prior': totalSC,
-                                  'total_PAYABLE_QTY_prior': totalPQ},
+                                  'total_PAYABLE_QTY_prior': totalPQ,
+                                  'opioid_cost_on_day_0': RX0,
+                                  'opioid_net_payment_on_day_0':NP0},
                                   index = [ID])
 
             features3 = features3.append(output, sort=False)
@@ -283,6 +293,32 @@ class DataPrep:
         supply_times.columns = ['supply_times']
         features3 = features3.merge(supply_times, left_on=features3.index.values, right_on=supply_times.index.values)
         features3 = features3.set_index('key_0')
+        
+        self.rx_paid['rx_cost'] = self.rx_paid['rx_cost'].map(float)
+        self.rx_paid['net_paid_amount'] = self.rx_paid['net_paid_amount'].map(float)
+
+        # add total costs features
+        total_costs_on_day_0 = self.rx_paid[self.rx_paid['Days']==0].groupby(by=['id'])['rx_cost'].agg(np.sum)
+        total_net_payment_on_day_0 = self.rx_paid[self.rx_paid['Days']==0].groupby(by=['id'])['net_paid_amount'].agg(np.sum)
+
+        features3['total_costs_on_day_0'] = total_costs_on_day_0
+        features3['total_net_payment_on_day_0'] = total_net_payment_on_day_0
+        features3['net_payment_portion_on_day_0'] = total_net_payment_on_day_0/total_costs_on_day_0
+        features3['opioid_cost_portion_on_day_0'] = features3['opioid_cost_on_day_0'].astype(float)/features3['total_costs_on_day_0'].astype(float)
+
+        # add some interaction
+        features3['MME_times_SUPPLY_day_0'] = features3['MME_on_day0']*features3['SUPPLY_CNT_on_day0']
+        features3['total_cost_divide_SUPPLY_day_0'] = features3['total_costs_on_day_0']/features3['SUPPLY_CNT_on_day0']
+        features3['total_net_payment_divide_on_day_0'] = features3['total_net_payment_on_day_0']/features3['SUPPLY_CNT_on_day0']
+        features3['np_portion_divide_SUPPLY_day_0'] = features3['net_payment_portion_on_day_0']/features3['SUPPLY_CNT_on_day0']
+        features3['oc_portion_divide_SUPPLY_day_0'] = features3['opioid_cost_portion_on_day_0']/features3['SUPPLY_CNT_on_day0']
+
+        features3['max_MME_prior_divide_SUPPLY_day_0'] = features3['max_MME_prior']/features3['SUPPLY_CNT_on_day0']
+        features3['avg_MME_prior_divide_SUPPLY_day_0'] = features3['avg_MME_prior']/features3['SUPPLY_CNT_on_day0']
+        features3['tsc_prior_divide_SUPPLY_day_0'] = features3['total_SUPPLY_CNT_prior']/features3['SUPPLY_CNT_on_day0']
+        features3['tpa_prior_divide_SUPPLY_day_0'] = features3['total_PAYABLE_QTY_prior']/features3['SUPPLY_CNT_on_day0']
+        features3['oc_day_0_divide_SUPPLY_day_0'] = features3['opioid_cost_on_day_0'].astype(float)/features3['SUPPLY_CNT_on_day0']
+        features3['np_day_0_divide_SUPPLY_day_0'] = features3['opioid_net_payment_on_day_0'].astype(float)/features3['SUPPLY_CNT_on_day0']
         
         self.main_features = features3
         
@@ -330,6 +366,9 @@ class DataPrep:
                                            self.main_features, 
                                            self.generic_features], 
                                            axis=1, join = 'inner').dropna()
+            
+            self.feature_frame = self.feature_frame.apply(pd.to_numeric, errors='coerce')
+            
         else:
             self.seperate_frame()
             self.main_feature_extraction()
@@ -338,3 +377,5 @@ class DataPrep:
             self.feature_frame = pd.concat([self.main_features, 
                                            self.generic_features], 
                                            axis=1, join = 'inner').dropna()
+            
+            self.feature_frame = self.feature_frame.apply(pd.to_numeric, errors='coerce')
