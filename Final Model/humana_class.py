@@ -374,8 +374,9 @@ class DataPrep:
             self.main_feature_extraction()
             self.generic_feature_extraction()
             
+            #changed from inner
             self.feature_frame = pd.concat([self.main_features, 
                                            self.generic_features], 
-                                           axis=1, join = 'inner').dropna()
+                                           axis=1, join = 'outer')
             
             self.feature_frame = self.feature_frame.apply(pd.to_numeric, errors='coerce')
