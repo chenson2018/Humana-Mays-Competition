@@ -14,10 +14,19 @@ def index(request):
     return HttpResponse(home)
 	
 def patient1(request):
-	return HttpResponse("PATIENT 1")
+	html = "Patient 1 <br>\
+	<img src=\"http://178.128.68.14/p1.png\" alt=\"logo\">"
+
+	return HttpResponse(html)
 	
 def patient2(request):
-	return HttpResponse("PATIENT 2")
+	html = "Patient 2 <br>\
+	<img src=\"http://178.128.68.14/p2.png\" alt=\"logo\">"
+
+	return HttpResponse(html)
 	
 def patient3(request):
-	return HttpResponse("PATIENT 3")
+	html = "Patient 3 <br>\
+	<img src=\"http://178.128.68.14/p3.png\" alt=\"logo\">"
+
+	return HttpResponse(html)
