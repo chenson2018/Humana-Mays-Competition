@@ -1,4 +1,4 @@
-This repository has all code used for an entry in the Humana-Mays Healthcare Analytics 2019 Case Competition. Team members were [Chris Henson](https://www.linkedin.com/in/christopher-henson/), [Jake Hill](https://www.linkedin.com/in/jake-hill/), and [Matthew Peng](https://www.linkedin.com/in/matthew-peng-utexas/)
+This repository has all code used for an entry in the Humana-Mays Healthcare Analytics 2019 Case Competition. This entry was selected for the final round of competition (top five of over 400 nationwide). Team members were [Chris Henson](https://www.linkedin.com/in/christopher-henson/), [Jake Hill](https://www.linkedin.com/in/jake-hill/), and [Matthew Peng](https://www.linkedin.com/in/matthew-peng-utexas/)
 
 ## Final Materials
 
